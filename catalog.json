@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "catalogVersion": "1.0.0",
+  "organization": "Enterprise AI Governance",
+  "skills": [
+    {
+      "name": "google-developer-documentation-style",
+      "displayName": "Google Developer Documentation Style Guide",
+      "version": "1.0.0",
+      "path": "skills/google-developer-documentation-style",
+      "archive": "dist/google-developer-documentation-style.zip",
+      "description": "Applies official Google Developer Documentation Style Guide to write, edit, and review developer and technical documentation.",
+      "tags": [
+        "documentation",
+        "style-guide",
+        "technical-writing",
+        "api-docs",
+        "engineering"
+      ],
+      "fileCount": 7,
+      "maxFileLimit": 10
+    }
+  ]
+}
