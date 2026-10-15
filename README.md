@@ -170,3 +170,16 @@ python3 scripts/package_skills.py --skill google-developer-documentation-style
 ## 🏛️ Governance and Review
 
 All skill additions or updates to this catalog are governed by `.github/CODEOWNERS` and require review and approval from designated enterprise administrators before being merged or tagged for release.
+
+---
+
+## 📘 Enterprise Operations and Deployment Manual
+
+For complete architecture, access requirements, versioning conventions, and deployment pipelines, see the dedicated [Deployment, Governance, and Operations Guide](DEPLOYMENT_AND_GOVERNANCE.md):
+
+* **System & IAM Requirements**: Roles for Google Cloud Discovery Engine, Workspace Admin, and GitHub.
+* **Architecture Best Practices**: 10-file ceiling rules, progressive disclosure, and boundary scoping.
+* **Semantic Versioning Strategy**: Rules for `MAJOR.MINOR.PATCH` and monorepo Git tagging (`skill-name@vX.Y.Z`).
+* **Deployment Methodologies**: Step-by-step procedures for Admin UI rollouts (Canary / Pilot Groups) and automated CI/CD pipelines via Google Cloud APIs / WIF.
+* **Rollback & Incident Management**: Sub-2-minute emergency killswitch and prior-version restoration procedures.
+
