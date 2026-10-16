@@ -206,7 +206,7 @@ To author and validate a new skill in this repository, complete the following st
    ```bash
    python3 scripts/validate_skills.py
    ```
-5. Add your skill entry to `catalog.json` and open a pull request.
+5. Commit your changes and open a pull request.
 
 ---
 

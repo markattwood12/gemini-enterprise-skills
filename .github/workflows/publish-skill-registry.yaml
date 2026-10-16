@@ -1,0 +1,39 @@
+name: Publish to Google Cloud Skill Registry
+
+on:
+  push:
+    tags:
+      - "*@v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate Skills
+        run: python3 scripts/validate_skills.py
+
+      - name: Authenticate to Google Cloud
+        if: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && vars.GCP_SERVICE_ACCOUNT != '' }}
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Publish Skills to Skill Registry
+        if: ${{ vars.GCP_PROJECT_ID != '' }}
+        run: |
+          python3 scripts/publish_to_skill_registry.py \
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --location "${{ vars.GCP_LOCATION || 'global' }}"

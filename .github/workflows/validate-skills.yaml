@@ -18,8 +18,8 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Run Skill Package Validator
+      - name: Validate Skill Schema and Limits
         run: python3 scripts/validate_skills.py
 
-      - name: Test Skill Packaging
-        run: python3 scripts/package_skills.py
+      - name: Test In-Memory Skill Registry Payload
+        run: python3 scripts/publish_to_skill_registry.py --project ci-validation --dry-run

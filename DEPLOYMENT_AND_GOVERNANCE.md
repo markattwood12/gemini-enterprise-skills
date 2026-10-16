@@ -201,7 +201,7 @@ For air-gapped environments or agencies that require a manual administrative gat
 
 1. Generate the `.zip` archive locally (or download it from the **GitHub Releases** page):
    ```bash
-   python3 scripts/package_skills.py --skill google-developer-documentation-style
+   python3 scripts/publish_to_skill_registry.py --skill google-developer-documentation-style --export-zip dist
    ```
    The script writes `dist/google-developer-documentation-style.zip`.
 2. Open the **Gemini Enterprise** web console with an administrator account.
