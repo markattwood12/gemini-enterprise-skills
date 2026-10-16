@@ -102,59 +102,44 @@ Depending on your agency's change-management policies and security posture, you 
 
 ### Methodology A: Admin-Governed Manual Deployment (Recommended for Government)
 
-This method provides human-in-the-loop oversight and is standard in FedRAMP or regulated environments where administrative sign-off is required before rolling out organization-wide changes.
+### The Core Architectural Pattern: GitHub as Source, Skill Registry as Runtime
+
+Leveraging the **Google Cloud Skill Registry** (`projects/{project}/locations/{location}/skills/*`) simplifies both the repository and the operational workflow:
+
+* **GitHub is the Source of Truth:** Pure markdown source code, collaborative pull requests, automated validation, and `CODEOWNERS` peer review. **No binary ZIP files are stored in Git.**
+* **Skill Registry is the Runtime Catalog:** Automatically provisions skills to your Gemini Enterprise Apps, manages immutable **Skill Revisions**, tracks audit logs, and handles permissions natively in Google Cloud.
 
 ```mermaid
-flowchart TD
-    A["Developer edits skill in branch"] --> B["Open PR against main"]
-    B --> C["Automated CI Validation (validate_skills.py)"]
-    C --> D["CODEOWNERS Peer Review & Approval"]
-    D --> E["Merge to main & Push Version Tag"]
-    E --> F["GitHub Actions compiles release ZIP"]
-    F --> G["Admin downloads verified release ZIP"]
-    G --> H["Upload to Gemini Enterprise Console"]
-    H --> I["Assign visibility (Pilot Group -> Org-Wide)"]
+flowchart LR
+    A["GitHub Monorepo<br/>(Markdown Source)"] -->|PR Merge / Tag| B["GitHub Actions CI/CD<br/>(WIF Auth)"]
+    B -->|publish_to_skill_registry.py| C["Google Cloud Skill Registry<br/>(Immutable Revisions)"]
+    C -->|Native Federation| D["Gemini Enterprise App<br/>(End Users)"]
+    C -->|Native Federation| E["Antigravity CLI / IDE<br/>(Developers)"]
 ```
-
-#### Step-by-Step Procedure:
-
-1. **Verify the Release Artifact**:
-   * Navigate to the [GitHub Releases page](https://github.com/markattwood12/gemini-enterprise-skills/releases).
-   * Download the verified `.zip` archive for the target release (for example, `google-developer-documentation-style.zip`).
-2. **Access the Gemini Enterprise Management Console**:
-   * Open the Gemini Enterprise web portal with an administrator account.
-   * In the left-hand navigation pane, select **Skills**.
-3. **Upload the Skill Package**:
-   * Click **Create Skill** (or **Add Skill**).
-   * Select **Upload Skill** and choose the `.zip` archive.
-   * Confirm that the skill name, description, and file count (7/10) populate correctly.
-4. **Staged Rollout (Canary / Pilot Group)**:
-   * In the **Sharing** settings, do not immediately select *Share with entire organization*.
-   * First, assign access to a **Pilot Group** (for example, the Technical Documentation Leads or Cloud Architecture Team).
-   * Have pilot users test the skill in production chat sessions for 48 hours to verify accuracy and ensure no unintended triggering occurs.
-5. **Organization-Wide Release**:
-   * Once validated, update the skill's sharing settings to **Share with Organization**.
-   * Broadcast release notes to staff summarizing how to invoke the skill (`/skill-name`).
 
 ---
 
-### Methodology B: Automated CI/CD Deployment via Google Cloud APIs
+### Methodology A: Automated Deployment to Skill Registry (Zero-Click CI/CD)
 
-For environments supporting automated infrastructure deployments, GitHub Actions can deploy skills directly into the Gemini Enterprise App collection.
+This is the recommended, simplified production workflow. A single script or GitHub Action publishes the skill directly into the Google Cloud Skill Registry.
 
-#### Prerequisites for CI/CD:
-* A Google Cloud Service Account with `roles/discoveryengine.editor`.
-* Workload Identity Federation (WIF) configured between GitHub and Google Cloud (eliminating stored static service account keys).
-* The Gemini Enterprise App resource ID:
-  ```text
-  projects/<PROJECT_NUMBER>/locations/global/collections/default_collection/engines/<APP_ID>
-  ```
+#### Local / Script Execution:
+```bash
+# Authenticate with Google Cloud
+gcloud auth login
 
-#### Automated Pipeline Configuration:
-Create a workflow `.github/workflows/deploy-gemini-enterprise.yaml`:
+# Publish skill directly to Google Cloud Skill Registry
+python3 scripts/publish_to_skill_registry.py \
+  --project <YOUR_GCP_PROJECT_ID> \
+  --location global \
+  --skill google-developer-documentation-style
+```
+The script packages the skill in memory, encodes the payload, sends it to `discoveryengine.googleapis.com/v1beta1`, and returns the newly minted immutable **Skill Revision ID**.
+
+#### Automated GitHub Actions Pipeline (`.github/workflows/deploy-skill-registry.yaml`):
 
 ```yaml
-name: Deploy to Gemini Enterprise
+name: Deploy Skills to Google Cloud Skill Registry
 
 on:
   push:
@@ -172,7 +157,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: "projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
@@ -183,17 +168,30 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Package Skills
-        run: python3 scripts/package_skills.py
-
-      - name: Deploy Skill to Gemini Enterprise App
-        env:
-          GEMINI_ENTERPRISE_APP_ID: ${{ secrets.GEMINI_ENTERPRISE_APP_ID }}
+      - name: Publish Skills to Skill Registry
         run: |
-          # Automated update to Discovery Engine / Gemini Enterprise Agent Platform
-          echo "Deploying packaged skill to $GEMINI_ENTERPRISE_APP_ID..."
-          # Uses agents-cli or Cloud API to register updated skill bundle
+          python3 scripts/publish_to_skill_registry.py \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --location global
 ```
+
+---
+
+### Methodology B: Admin-Governed Manual Deployment (Air-Gapped / Human Gate)
+
+For environments where automated network ingress is prohibited and an administrator must perform a human-in-the-loop manual upload:
+
+1. **Build Archive Locally or via Release Tag**:
+   ```bash
+   python3 scripts/package_skills.py --skill google-developer-documentation-style
+   ```
+2. **Access Gemini Enterprise Console**:
+   * Open the Gemini Enterprise web console as an administrator.
+   * Go to **Skills** > **Create Skill** (or **Add Skill**).
+   * Upload the generated `.zip` from `dist/` (or from GitHub Releases).
+3. **Staged Rollout (Canary / Pilot Group)**:
+   * Share the skill initially with a **Pilot Group** (for example, the Technical Documentation Leads).
+   * After verification in production chats, promote visibility to **Share with Organization**.
 
 ---
 

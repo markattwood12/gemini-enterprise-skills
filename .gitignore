@@ -2,6 +2,12 @@
 .DS_Store
 Thumbs.db
 
+# Packaging and Build Artifacts (Managed by Google Cloud Skill Registry)
+dist/
+build/
+*.zip
+
+
 # Python
 __pycache__/
 *.py[cod]

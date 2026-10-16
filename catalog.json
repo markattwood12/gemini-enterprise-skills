@@ -8,7 +8,7 @@
       "displayName": "Google Developer Documentation Style Guide",
       "version": "1.0.0",
       "path": "skills/google-developer-documentation-style",
-      "archive": "dist/google-developer-documentation-style.zip",
+      "registryResource": "projects/{PROJECT}/locations/{LOCATION}/skills/google-developer-documentation-style",
       "description": "Applies official Google Developer Documentation Style Guide to write, edit, and review developer and technical documentation.",
       "tags": [
         "documentation",
