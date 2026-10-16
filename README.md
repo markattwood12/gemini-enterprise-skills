@@ -1,138 +1,91 @@
 # Gemini Enterprise skills catalog
 
-This repository provides a centralized, version-controlled catalog of organization-wide skills for **Gemini Enterprise** and **Google Antigravity**, backed by the **Google Cloud Skill Registry**.
+This repository is the central monorepo for authoring, validating, versioning, and publishing organization-wide skills to the **Google Cloud Skill Registry** for **Gemini Enterprise** and **Google Antigravity**.
 
 ---
 
-## What is a Gemini Enterprise skill?
+## Overview
 
-A skill is a modular instruction package that teaches Gemini Enterprise your organization's specific standards, workflows, and editorial rules.
+A **skill** is a modular instruction package (`SKILL.md` and optional `references/` files) that teaches Gemini Enterprise your organization's domain-specific standards, workflows, and policies.
 
-When maintainers publish a skill from this repository to your agency's **Google Cloud Skill Registry**, the skill becomes available across your Gemini Enterprise workspace. Instead of entering repetitive instructions in every prompt, Gemini Enterprise applies the skill's guidelines automatically whenever you work on relevant tasks.
+Instead of maintaining separate repositories for individual skills, teams across the organization use this monorepo to:
 
----
-
-## Available skills in this catalog
-
-The following table lists the production skills maintained in this repository:
-
-| Skill name | Description | Target audience | Status | Source directory |
-| :--- | :--- | :--- | :--- | :--- |
-| `google-developer-documentation-style` | Formats and audits technical guides, API documentation, CLI manuals, and READMEs according to the [Google Developer Documentation Style Guide](https://developers.google.com/style). | Technical writers, software engineers, DevOps engineers, and QA analysts | Production (`v1.0.0`) | [`skills/google-developer-documentation-style`](skills/google-developer-documentation-style) |
+* **Collaborate and review**: Author domain skills (such as cloud architecture reviews, security compliance checks, data pipeline runbooks, or editorial guides) through pull requests governed by [`.github/CODEOWNERS`](.github/CODEOWNERS).
+* **Validate automatically**: Enforce YAML frontmatter schemas, explicit scope boundaries, link integrity, and the 10-file Gemini Enterprise limit by using [`scripts/validate_skills.py`](scripts/validate_skills.py) and GitHub Actions CI.
+* **Publish to the Google Cloud Skill Registry**: Deploy validated skills directly to `projects/<PROJECT_ID>/locations/<LOCATION>/skills/<SKILL_NAME>` as immutable revisions by using [`scripts/publish_to_skill_registry.py`](scripts/publish_to_skill_registry.py) or automated release tags.
 
 ---
 
-## Quick start for semi-technical users and content teams
+## Repository structure and reference skill
 
-Because skills in this repository are published directly to your agency's **Google Cloud Skill Registry**, you do not need programming experience, command-line tools, or manual file uploads to use them in Gemini Enterprise.
+The repository is organized as follows:
 
-### Enable and verify a skill in Gemini Enterprise
+```text
+gemini-enterprise-skills/
+├── .github/
+│   ├── CODEOWNERS                          # Designates required governance reviewers
+│   └── workflows/
+│       ├── publish-skill-registry.yaml     # Publishes skills to Skill Registry on tag push
+│       └── validate-skills.yaml            # Runs schema and dry-run checks on every PR
+├── DEPLOYMENT_AND_GOVERNANCE.md            # Enterprise architecture, IAM, and rollback manual
+├── README.md                               # Catalog overview and authoring guide
+├── scripts/
+│   ├── publish_to_skill_registry.py        # Publishes skills to Google Cloud Skill Registry
+│   └── validate_skills.py                  # Validates YAML frontmatter, links, and file limits
+├── skills/                                 # Production skills catalog
+│   └── google-developer-documentation-style/ # Reference skill implementation
+└── templates/
+    └── skill-template/                     # Starter scaffold for creating new skills
+```
 
-To confirm that a published skill is enabled in your Gemini Enterprise workspace, complete the following steps:
+### Included reference skill
+
+This repository includes [`skills/google-developer-documentation-style`](skills/google-developer-documentation-style) as a complete reference implementation and test target. Use this skill to:
+
+* **Inspect best-practice structure**: Review how a production [`SKILL.md`](skills/google-developer-documentation-style/SKILL.md) uses `USE FOR:` and `DO NOT USE FOR:` scope boundaries, an agency precedence clause, and progressive disclosure across six files in [`references/`](skills/google-developer-documentation-style/references).
+* **Test the validation and publishing pipeline**: Run the local validation and dry-run commands against a known-good skill package before authoring your own.
+
+---
+
+## Quick start for semi-technical users and workspace administrators
+
+When maintainers publish skills from this repository to your agency's **Google Cloud Skill Registry**, those skills become available in your **Gemini Enterprise** workspace without requiring command-line tools or manual file uploads.
+
+### Enable and share a skill in Gemini Enterprise
+
+To verify that a published skill is enabled and shared with the appropriate teams in Gemini Enterprise, complete the following steps:
 
 1. Open your agency's **Gemini Enterprise** web console.
-2. In the left navigation menu, click **Skills**. The workspace skills catalog opens, listing all skills federated from your agency's **Google Cloud Skill Registry**.
-3. Locate `google-developer-documentation-style` in the catalog and verify that its status is **Enabled**.
-4. If you are a **Gemini Enterprise Administrator** configuring access for your agency, click the skill name, open **Sharing and Visibility**, and select one of the following options:
-   * **Share with Organization**: Grants access to all users in your agency.
-   * **Share with Groups**: Restricts access to specific Google Groups (such as technical writing or engineering teams).
-5. Open a new chat session in **Gemini Enterprise** and enter `/` in the chat composer field. A menu of active skills opens, confirming that `/google-developer-documentation-style` is ready for use.
+2. In the left navigation menu, click **Skills**. The workspace catalog opens and lists all skills federated from your agency's **Google Cloud Skill Registry**.
+3. Select the target skill from the catalog and verify that its status is **Enabled**.
+4. If you are a **Gemini Enterprise Administrator** configuring access permissions, open **Sharing and Visibility** and select one of the following options:
+   * **Share with Organization**: Grants access to all users across your agency.
+   * **Share with Groups**: Restricts access to specific Google Groups or organizational units (such as engineering, security, legal, or technical writing teams).
+5. Click **Save**.
 
----
+### Invoke a skill in conversation
 
-## How to use a skill in your daily work
+After a skill is enabled in your workspace, you can apply it in any Gemini Enterprise chat session by using one of three methods:
 
-After a skill is enabled in your Gemini Enterprise workspace, you can invoke it in any conversation by using one of the following three methods:
-
-### Use a slash command
-
-To explicitly activate the skill for a prompt, enter `/` in the chat field, select `/google-developer-documentation-style`, and enter your instructions:
-
-```text
-/google-developer-documentation-style Review the following installation steps for our data pipeline:
-[Paste your draft here]
-```
-
-### Use a direct mention
-
-To reference the skill inline, enter `@` followed by the skill name:
-
-```text
-@google-developer-documentation-style Edit this API error troubleshooting guide to follow standard Google style.
-[Paste your draft here]
-```
-
-### Use natural language
-
-Because Gemini Enterprise evaluates the semantic context of your prompt against the skill descriptions in the registry, you can also enter your request directly without a command prefix:
-
-```text
-Review this draft README against developer documentation standards. Focus on active voice, sentence-case headings, and imperative procedural steps.
-[Paste your draft here]
-```
-
----
-
-## Example prompts to copy and paste
-
-You can copy and adapt the following prompt templates for common documentation tasks:
-
-* **Polish a rough technical draft**:
-  > *"Use `/google-developer-documentation-style` to rewrite these release notes into developer documentation. Put conditions before instructions, and format all headings in sentence case."*
-* **Audit a step-by-step procedure**:
-  > *"Audit these installation instructions. Verify that every numbered step starts with an imperative verb, that user actions are separated from system results, and that UI elements appear in bold text while commands appear in code font."*
-* **Convert passive voice to active voice**:
-  > *"Review this architecture overview and convert passive-voice sentences into active voice. Remove minimizing words such as 'simply', 'just', and 'obviously'."*
-* **Format API parameter tables**:
-  > *"Review this table of API parameters. Format parameter names in code font, state whether each parameter is required or optional, specify default values, and format descriptions according to the reference documentation guidelines."*
-
----
-
-## Before and after examples
-
-The following table illustrates how the documentation style skill edits common technical writing issues:
-
-| Unedited draft | Revised version | Rationale |
-| :--- | :--- | :--- |
-| *Clicking on the **Submit** button will send your request to the server.* | *Click **Submit**. The server processes the request.* | Uses present tense and imperative mood, and separates the user action from the system result. |
-| *It's easy! Simply enter `gcloud auth login` to log in.* | *To log in to your account, run `gcloud auth login`.* | Removes condescending language (*easy*, *simply*), eliminates the exclamation mark, and front-loads the goal. |
-| *Open the IAM menu if you want to create a key.* | *To create a key, open the **IAM** page.* | Places the condition before the instruction so the reader immediately knows if the step applies to them. |
-| *Click `Deploy` on the top bar.* | *Click **Deploy**.* | Formats visible UI buttons in **bold** instead of monospace code font. |
-| *Verify by checking the whitelist and running a sanity check.* | *Verify by checking the **allowlist** and running a **coherence check**.* | Replaces non-inclusive idioms with precise, standard technical terminology. |
-
----
-
-## Frequently asked questions
-
-### Does this skill alter programming code or technical logic?
-
-No. The skill only audits and revises prose, formatting, tone, organization, and terminology. It does not change your programming code, architectural designs, or security configurations.
-
-### What happens if an agency rule conflicts with the Google style guide?
-
-The skill includes an embedded **Precedence Clause**. If your agency follows a specific statutory standard, the GPO Style Manual, or an internal naming convention, state that requirement in your prompt:
-
-> *"Follow our internal agency standard for agency acronyms, and apply Google style for all other formatting and tone."*
-
-Your project-specific instruction overrides the default rule in the skill.
-
-### Should I use this skill on executive memos, policy letters, or emails?
-
-No. This skill is scoped strictly for software and developer documentation (such as READMEs, API references, and CLI guides). Applying it to general business correspondence removes conversational phrases (such as "please") and enforces technical formatting that is inappropriate for memos or emails.
-
-### How can I confirm that the skill activated during a chat?
-
-When Gemini Enterprise applies a skill to your prompt, the chat interface displays a badge indicating the active skill name on the response card.
+* **Slash command (explicit activation)**: Enter `/` in the chat composer field to open the menu of enabled skills, select `/<skill-name>`, and enter your prompt:
+  ```text
+  /<skill-name> [Enter your task or paste your content here]
+  ```
+* **Direct mention**: Enter `@` followed by the skill name in your prompt:
+  ```text
+  @<skill-name> [Enter your task or paste your content here]
+  ```
+* **Natural language (automatic activation)**: Enter your request directly. Gemini Enterprise compares the semantic context of your prompt against the `description` field of each enabled skill and activates matching skills automatically. When a skill activates, the chat interface displays a badge with the active skill name on the response card.
 
 ---
 
 ## How to write and publish a new skill to the Skill Registry
 
-This section describes the end-to-end process for authoring, validating, versioning, and publishing a new skill to the **Google Cloud Skill Registry** (`projects/<PROJECT_ID>/locations/<LOCATION>/skills/<SKILL_NAME>`).
+Follow this four-step workflow to author, validate, and publish a new skill for your team or agency.
 
 ### Prerequisites
 
-To author and publish skills from your workstation, ensure that you have the following tools and permissions:
+Before you author or publish skills from your workstation, ensure that you have the following tools and permissions:
 
 * Python 3.10 or later
 * Git 2.30 or later
@@ -140,7 +93,7 @@ To author and publish skills from your workstation, ensure that you have the fol
 
 ### Step 1: Scaffold the new skill from the template
 
-To create the directory structure for a new skill, run the following commands from the repository root:
+To create a new skill folder from the starter template, run the following commands from the repository root:
 
 ```bash
 git clone https://github.com/markattwood12/gemini-enterprise-skills.git
@@ -152,22 +105,25 @@ cp -r templates/skill-template skills/<YOUR_SKILL_NAME>
 
 To write your skill instructions so that they comply with Gemini Enterprise architecture standards, complete the following steps:
 
-1. Open `skills/<YOUR_SKILL_NAME>/SKILL.md` and configure the YAML frontmatter:
-   * Set `name` to match your folder name (using lowercase letters, numbers, and hyphens, such as `cloud-security-review`).
-   * Set `description` and include explicit `USE FOR:` and `DO NOT USE FOR:` clauses so Gemini Enterprise does not trigger the skill on unrelated topics.
-2. Write the core rules and review checklist in `skills/<YOUR_SKILL_NAME>/SKILL.md`. Keep the root `SKILL.md` concise so Gemini Enterprise can answer routine requests with low latency.
-3. Place detailed specifications, edge cases, and examples in `skills/<YOUR_SKILL_NAME>/references/` (progressive disclosure).
-4. Ensure that the skill directory contains **no more than 10 files** in total (`SKILL.md` plus up to nine files in `references/`), and that every file in `references/` is linked from the routing table in `SKILL.md`.
+1. Open `skills/<YOUR_SKILL_NAME>/SKILL.md` and update the YAML frontmatter:
+   * Set `name` to match your folder name (using lowercase letters, numbers, and hyphens, such as `cloud-architecture-review` or `procurement-compliance`).
+   * Set `description` and include explicit `USE FOR:` and `DO NOT USE FOR:` clauses. Gemini Enterprise uses this description for semantic routing; clear negative boundaries prevent the skill from activating on unrelated prompts.
+2. Write the core principles, high-frequency rules, and review checklist in `skills/<YOUR_SKILL_NAME>/SKILL.md`. Keep the root file focused so Gemini Enterprise can answer routine requests without loading secondary files.
+3. Place detailed domain specifications, edge cases, and examples in `skills/<YOUR_SKILL_NAME>/references/` (progressive disclosure).
+4. Verify that your skill directory contains **no more than 10 files** in total (`SKILL.md` plus up to nine files in `references/`), and that every file in `references/` is linked in the routing table inside `SKILL.md`.
+
+> [!TIP]
+> Refer to [`skills/google-developer-documentation-style`](skills/google-developer-documentation-style) as a working example of how to structure frontmatter boundaries, routing tables, and modular reference files.
 
 ### Step 3: Validate and dry-run test locally
 
-To verify that your new skill meets all schema, link-integrity, and file-count requirements before committing, run the validation and dry-run commands:
+To verify that your skill meets all schema, link-integrity, and file-count requirements before opening a pull request, complete the following steps:
 
-1. Run the schema and link validator:
+1. Run the validation script:
    ```bash
    python3 scripts/validate_skills.py
    ```
-   The script verifies the YAML frontmatter, confirms that `USE FOR:` and `DO NOT USE FOR:` are present, checks all internal links, and verifies the 10-file limit.
+   The script checks every folder in `skills/`, validates the YAML frontmatter, verifies that `USE FOR:` and `DO NOT USE FOR:` are defined, checks all `references/` links, and enforces the 10-file limit.
 2. Run an in-memory packaging dry run:
    ```bash
    python3 scripts/publish_to_skill_registry.py \
@@ -175,19 +131,19 @@ To verify that your new skill meets all schema, link-integrity, and file-count r
      --skill <YOUR_SKILL_NAME> \
      --dry-run
    ```
-   The script packs the skill into an in-memory ZIP payload and confirms the bundle size without making network calls.
+   The script validates and packs the skill into an in-memory ZIP payload without making network calls.
 
 ### Step 4: Publish the skill to the Google Cloud Skill Registry
 
-You can publish your validated skill to the Google Cloud Skill Registry either automatically through **GitHub Actions CI/CD** (recommended for production) or directly from the **command line**.
+You can publish validated skills to the Google Cloud Skill Registry through **GitHub Actions CI/CD** (recommended for production) or directly from the **command line**.
 
 #### Option A: Automated publishing through GitHub Actions (recommended)
 
-The repository includes [`.github/workflows/publish-skill-registry.yaml`](.github/workflows/publish-skill-registry.yaml), which publishes skills to the Google Cloud Skill Registry whenever a maintainer pushes a version tag matching `*@v*`.
+The [`.github/workflows/publish-skill-registry.yaml`](.github/workflows/publish-skill-registry.yaml) workflow publishes skills to the Google Cloud Skill Registry whenever a maintainer pushes a version tag matching `*@v*`.
 
 To publish through CI/CD, complete the following steps:
 
-1. In your GitHub repository settings (**Settings** > **Secrets and variables** > **Actions** > **Variables**), ensure that the following repository variables are configured for Workload Identity Federation:
+1. In your GitHub repository settings (**Settings** > **Secrets and variables** > **Actions** > **Variables**), verify that the following repository variables are configured for Workload Identity Federation:
    * `GCP_PROJECT_ID`: Your target Google Cloud project ID.
    * `GCP_LOCATION`: The registry location (defaults to `global`).
    * `GCP_WORKLOAD_IDENTITY_PROVIDER`: The full resource name of your Workload Identity Provider.
@@ -208,14 +164,14 @@ To publish or update a skill directly from your terminal to the Google Cloud Ski
    ```bash
    gcloud auth login
    ```
-2. Run `scripts/publish_to_skill_registry.py` with your target project ID:
+2. Run `scripts/publish_to_skill_registry.py` with your target project ID (omit `--skill` to publish all skills in `skills/`):
    ```bash
    python3 scripts/publish_to_skill_registry.py \
      --project <PROJECT_ID> \
      --location global \
      --skill <YOUR_SKILL_NAME>
    ```
-   If the skill does not yet exist in the registry, the script sends a `POST` request to create it. If the skill already exists, the script automatically sends a `PATCH` request to update the content and create a new immutable skill revision.
+   If the skill does not yet exist in the registry, the script sends a `POST` request to create it. If the skill already exists, the script sends a `PATCH` request to update the content and create a new immutable skill revision.
 
 #### Option C: Standalone `.zip` export for air-gapped environments
 
@@ -231,6 +187,26 @@ The script validates the skill and writes `dist/<YOUR_SKILL_NAME>.zip` with `SKI
 
 ---
 
+## Frequently asked questions
+
+### Why do we store all skills in a single repository instead of separate repositories?
+
+Most skills consist of lightweight Markdown files (`SKILL.md` and `references/`). Managing them in a single monorepo provides a unified catalog for discovery, a single CI/CD validation and publishing pipeline, and centralized governance through [`.github/CODEOWNERS`](.github/CODEOWNERS).
+
+### How do we prevent a skill from activating on the wrong prompts?
+
+Every skill in this repository must include explicit `USE FOR:` and `DO NOT USE FOR:` clauses in its YAML `description`. Gemini Enterprise uses these boundaries during semantic routing so domain-specific skills activate only on matching tasks. Users can also invoke a specific skill explicitly at any time by typing `/<skill-name>`.
+
+### Why is each skill limited to 10 files?
+
+Gemini Enterprise enforces a maximum of 10 files per skill package. Combine related topics into focused guides inside `references/` (progressive disclosure), and run `python3 scripts/validate_skills.py` to verify that your skill stays within the limit.
+
+### How do we roll back a skill if an update causes unexpected behavior?
+
+A workspace administrator can disable any skill in under two minutes from the **Gemini Enterprise** console (**Skills** > select skill > toggle **Enabled** to **Disabled**), or you can check out the previous `<SKILL_NAME>@v<X.Y.Z>` Git tag and re-run `scripts/publish_to_skill_registry.py` to publish the prior version as the latest revision.
+
+---
+
 ## Governance and operations manual
 
-All additions and modifications to this catalog are governed by [`.github/CODEOWNERS`](.github/CODEOWNERS). For detailed architecture specifications, IAM roles, semantic versioning rules, and incident rollback procedures, see the [Deployment, governance, and operations guide](DEPLOYMENT_AND_GOVERNANCE.md).
+For complete architecture specifications, IAM role definitions, semantic versioning standards, and incident rollback procedures, see the [Deployment, governance, and operations guide](DEPLOYMENT_AND_GOVERNANCE.md).
