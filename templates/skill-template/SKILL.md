@@ -1,7 +1,7 @@
 ---
 name: your-skill-name
 description: >-
-  Brief 1-2 sentence description explaining what this skill does and when Gemini should apply it.
+  Brief one-to-two sentence description explaining what this skill does and when Gemini Enterprise applies it.
   USE FOR: [Specify clear, unambiguous domains or tasks].
   DO NOT USE FOR: [Specify out-of-scope tasks or domains].
 metadata:
@@ -9,37 +9,42 @@ metadata:
   version: 1.0.0
 ---
 
-# Your Skill Name
+# Your skill name
 
-Brief overview of the skill's purpose and principles.
+Provide a brief overview of the skill's purpose and scope.
 
 ---
 
 > [!IMPORTANT]
-> **Precedence Clause:**
+> **Precedence clause:**
 > If an agency-specific policy or statutory requirement conflicts with this guide, the agency-specific requirement takes precedence.
 
 ---
 
-## ⚡ Core Principles & Guidelines
+## Core principles and guidelines
 
-1. **Principle 1**: Clear guideline description.
-2. **Principle 2**: Clear guideline description.
-3. **Principle 3**: Clear guideline description.
+Apply the following guidelines when executing this skill:
+
+1. **Principle 1**: State the first rule clearly.
+2. **Principle 2**: State the second rule clearly.
+3. **Principle 3**: State the third rule clearly.
 
 ---
 
-## 🧭 Topic Routing Table
+## Topic routing table
 
-| Topic / Task | Reference Guide |
+Consult the following reference documents for detailed instructions:
+
+| Topic or task | Reference guide |
 | :--- | :--- |
-| Detailed instructions for specific workflows | [Detailed Guide](references/guide.md) |
+| Detailed instructions for specific workflows | [Detailed guide](references/guide.md) |
 
 ---
 
-## 📋 Review & Quality Checklist
+## Review and quality checklist
 
-Before finalizing output, verify against these checks:
+Before finalizing output, verify compliance with the following checks:
+
 * [ ] Check 1
 * [ ] Check 2
 * [ ] Check 3

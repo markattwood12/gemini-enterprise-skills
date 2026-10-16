@@ -1,11 +1,11 @@
-# Detailed Reference Guide
+# Detailed reference guide
 
-Provide deep procedural instructions, edge cases, examples, and detailed criteria here.
+Provide deep procedural instructions, edge cases, examples, and evaluation criteria in this document.
 
-## 1. Section One
+## 1. First topic
 
-Instructions and specifications.
+Provide instructions and specifications for the first topic.
 
-## 2. Section Two
+## 2. Second topic
 
-Detailed examples and patterns.
+Provide detailed examples and patterns for the second topic.

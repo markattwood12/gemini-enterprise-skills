@@ -1,145 +1,162 @@
-# Deployment, Governance, and Operations Guide
+# Deployment, governance, and operations guide
 
-This guide establishes the operational standards, requirements, versioning strategy, and deployment methodologies for managing and deploying skills from this repository to a managed **Gemini Enterprise** application.
-
----
-
-## 1. System and Access Requirements
-
-Before deploying or managing skills in an enterprise or government environment, ensure the following identity, software, and compliance prerequisites are met.
-
-### Identity and IAM Roles
-To manage and publish skills in Gemini Enterprise, administrators and CI/CD service accounts require the following permissions:
-
-* **Google Cloud Console / Discovery Engine**:
-  * `roles/discoveryengine.admin`: Required to create, configure, and register app extensions or agents at the organization level.
-  * `roles/discoveryengine.editor`: Required to update skill metadata, manage collections, and register reasoning engines.
-  * `roles/iam.workloadIdentityUser`: Required for GitHub Actions automated deployments using Workload Identity Federation (WIF).
-* **Google Workspace Admin Console**:
-  * **Gemini Enterprise Administrator**: Required to approve and distribute skills across organizational units (OUs) or Google Workspace groups.
-* **GitHub Repository Permissions**:
-  * **Maintainer / Admin**: Required to merge pull requests affecting production skills and cut release tags.
-  * **Protected Branches**: The `main` branch must enforce status checks (`validate-skills.yaml`) and require review from designated `CODEOWNERS`.
-
-### Local Software Requirements
-For contributors authoring, testing, or packaging skills:
-* **Python**: Version 3.10 or higher.
-* **Git**: Version 2.30 or higher.
-* **Google Cloud SDK (`gcloud`)**: Version 450.0.0 or higher (for cloud registry management).
-
-### Compliance and Data Residency
-* **Government and FedRAMP Environments**: All skills deployed from this catalog operate strictly within your agency's Gemini Enterprise tenant. Prompts, documents, and reference materials remain within your enterprise security perimeter and are never used to train public foundational models.
-* **VPC Service Controls**: If your deployment operates inside a restricted VPC Service Control perimeter, ensure all reference files are self-contained within the skill package. External web grounding must not be relied upon as a hard dependency.
+This guide defines the operational standards, access requirements, versioning strategy, and deployment methodologies for managing and publishing skills to a managed **Gemini Enterprise** application.
 
 ---
 
-## 2. Skill Architecture and Best Practices
+## 1. System and access requirements
 
-To maintain performance, prevent latency spikes, and avoid prompt bloating, all skills in this catalog must adhere to the following architectural rules:
+Before you deploy or manage skills in an enterprise or government environment, verify that your environment meets the following identity, software, and compliance requirements.
 
-### A. The 10-File Ceiling (Hard Constraint)
-Gemini Enterprise enforces a hard limit of **10 files per skill ZIP archive**.
-* Every skill must consist of `SKILL.md` at the root, plus a maximum of **9 supporting files** in `references/` or helper scripts.
-* Packages containing 11 or more files will be rejected by `scripts/validate_skills.py` and GitHub Actions CI.
+### Identity and IAM roles
 
-### B. Progressive Disclosure Pattern
-To keep chat responses fast and reduce token consumption:
-* **`SKILL.md` (Level 1)**: Must contain the core principles, 10 Golden Rules, and an editorial checklist. This allows Gemini to answer approximately 80% of routine user queries immediately without reading secondary files.
-* **`references/` (Level 2)**: Houses granular reference documents (such as deep API formatting specs or comprehensive word lists). Gemini retrieves these reference files dynamically only when a complex or ambiguous prompt requires deeper context.
+Administrators and CI/CD service accounts require the following permissions to manage and publish skills:
 
-### C. Explicit Scope Boundaries
-Every skill's YAML frontmatter must include unambiguous boundary markers in its `description`:
-* **`USE FOR:`**: Explicitly enumerate target domains (for example, software documentation, API references, CLI manuals).
-* **`DO NOT USE FOR:`**: Explicitly declare out-of-scope tasks (for example, executive correspondence, legal policy, press releases).
-* *Why this matters*: Gemini Enterprise dynamically activates skills based on semantic matching. Explicit negative boundaries prevent the model from inadvertently applying technical rules to general business correspondence.
+* **Google Cloud console and Discovery Engine**:
+  * `roles/discoveryengine.admin`: Allows administrators to create, configure, and register application extensions or agents at the organization level.
+  * `roles/discoveryengine.editor`: Allows administrators or service accounts to update skill metadata, manage collections, and create skill revisions.
+  * `roles/iam.workloadIdentityUser`: Allows GitHub Actions workflows to authenticate with Google Cloud by using Workload Identity Federation (WIF).
+* **Google Workspace Admin console**:
+  * **Gemini Enterprise Administrator**: Allows administrators to approve and distribute skills across organizational units (OUs) or Google Groups.
+* **GitHub repository permissions**:
+  * **Maintainer** or **Admin**: Allows maintainers to merge pull requests into `main` and push release tags.
+  * **Branch protection rules**: Configure the `main` branch to require passing status checks (`validate-skills.yaml`) and approval from designated [`.github/CODEOWNERS`](.github/CODEOWNERS).
 
-### D. The Precedence Clause
-All agency skills must include an embedded precedence notice:
-> *"If an agency-specific policy, statutory requirement, or GPO guideline conflicts with this guide, the agency-specific requirement takes precedence."*
+### Local software requirements
+
+Contributors who author, validate, or publish skills from a local workstation must install the following tools:
+
+* Python 3.10 or later
+* Git 2.30 or later
+* Google Cloud CLI (`gcloud`) 450.0.0 or later
+
+### Compliance and data residency
+
+When deploying skills in government or regulated environments, observe the following compliance boundaries:
+
+* **Government and FedRAMP boundaries**: All skills published from this catalog operate within your agency's Gemini Enterprise tenant. Prompts, documents, and reference files remain inside your security perimeter and never train public foundational models.
+* **VPC Service Controls**: If your environment enforces a restricted VPC Service Controls perimeter, include all reference guidance directly inside the skill package. Do not rely on external web grounding as a hard dependency.
 
 ---
 
-## 3. Versioning Strategy
+## 2. Skill architecture and best practices
 
-This repository enforces **Semantic Versioning (SemVer 2.0.0)** for all skills.
+To maintain low latency and prevent prompt bloating, all skills in this catalog must follow four core architectural patterns:
 
-### Version Format: `MAJOR.MINOR.PATCH`
+### Adhere to the 10-file limit
 
-1. **`MAJOR` (Breaking Changes)**:
-   * Structural reorganization of `SKILL.md`.
-   * Altering core rule defaults that fundamentally change how Gemini rewrites or audits documents.
-   * Removing or renaming reference files that existing workflows depend upon.
-2. **`MINOR` (New Features & Additive Changes)**:
-   * Adding new reference documents in `references/` (while staying within the 10-file ceiling).
-   * Adding new terminology to word lists or expanding checklists.
-   * Updating templates or packaging scripts.
-3. **`PATCH` (Bug Fixes & Refinements)**:
-   * Typo corrections, link updates, or clarifying existing wording without altering the underlying style rule.
+Gemini Enterprise enforces a hard limit of **10 files per skill package**:
 
-### Multi-Skill Tagging Convention
-Because this repository operates as a monorepo containing multiple skills, individual releases are versioned using skill-specific Git tags:
+* Include `SKILL.md` at the root of the skill directory, plus a maximum of nine supporting files in `references/`.
+* The validation script (`scripts/validate_skills.py`) and GitHub Actions CI reject packages that contain more than 10 files.
+
+### Use progressive disclosure
+
+To minimize Time-To-First-Token (TTFT) latency and reduce token consumption, organize content into two levels:
+
+* **Level 1 (`SKILL.md`)**: Place the 10 golden rules, core principles, and review checklist in the root `SKILL.md` file. This structure enables Gemini Enterprise to answer approximately 80% of routine requests immediately without retrieving secondary files.
+* **Level 2 (`references/`)**: Place detailed reference materials (such as API formatting specifications or comprehensive word lists) in the `references/` directory. Gemini Enterprise retrieves these files dynamically only when a task requires specialized rules.
+
+### Define explicit scope boundaries
+
+Every skill's YAML frontmatter must include explicit positive and negative scope boundaries in its `description` field:
+
+* **`USE FOR:`**: List the specific target domains (for example, software developer guides, API references, and CLI manuals).
+* **`DO NOT USE FOR:`**: List out-of-scope tasks (for example, executive memos, policy letters, press releases, and legal contracts).
+
+Because Gemini Enterprise activates skills dynamically based on semantic similarity, explicit negative boundaries prevent the model from applying technical documentation rules to general business correspondence.
+
+### Include the agency precedence clause
+
+Every skill must include the following precedence notice in `SKILL.md`:
+
+> *"If an agency-specific policy, statutory requirement, or GPO guideline conflicts with a rule in this guide, the agency-specific requirement takes precedence."*
+
+---
+
+## 3. Versioning strategy
+
+This repository uses **Semantic Versioning (SemVer 2.0.0)** to track changes to skills.
+
+### Version format (`MAJOR.MINOR.PATCH`)
+
+Increment version numbers according to the following criteria:
+
+* **`MAJOR` (breaking changes)**:
+  * Reorganizing the structure of `SKILL.md`.
+  * Changing core rules in a way that alters how Gemini Enterprise audits or rewrites documents.
+  * Removing or renaming reference files.
+* **`MINOR` (additive changes)**:
+  * Adding new reference guides in `references/` (while remaining within the 10-file limit).
+  * Expanding word lists, examples, or audit checklists.
+  * Adding new validation or publishing features.
+* **`PATCH` (fixes and refinements)**:
+  * Fixing typographical errors, broken links, or formatting issues without changing the underlying rules.
+
+### Monorepo tagging convention
+
+Because this repository stores multiple skills in a single monorepo, tag individual skill releases by using the `<skill-name>@v<MAJOR>.<MINOR>.<PATCH>` format:
 
 ```bash
-git tag -a <skill-name>@v<MAJOR>.<MINOR>.<PATCH> -m "Release description"
-git push origin <skill-name>@v<MAJOR>.<MINOR>.<PATCH>
+git tag -a <SKILL_NAME>@v<MAJOR>.<MINOR>.<PATCH> -m "<RELEASE_DESCRIPTION>"
+git push origin <SKILL_NAME>@v<MAJOR>.<MINOR>.<PATCH>
 ```
 
-**Example:**
+For example, to tag version `1.1.0` of the documentation style skill, run the following commands:
+
 ```bash
 git tag -a google-developer-documentation-style@v1.1.0 -m "Add API reference documentation guide"
 git push origin google-developer-documentation-style@v1.1.0
 ```
 
-Pushing this tag automatically triggers the `.github/workflows/package-releases.yaml` workflow, which compiles the skill into a ZIP archive and attaches it to a new GitHub Release.
-
 ---
 
-## 4. Deployment Methodologies
+## 4. Deployment methodologies
 
-Depending on your agency's change-management policies and security posture, you can deploy skills using either an **Admin-Governed UI Workflow** or an **Automated CI/CD Pipeline**.
+This repository separates source control from runtime distribution:
 
----
-
-### Methodology A: Admin-Governed Manual Deployment (Recommended for Government)
-
-### The Core Architectural Pattern: GitHub as Source, Skill Registry as Runtime
-
-Leveraging the **Google Cloud Skill Registry** (`projects/{project}/locations/{location}/skills/*`) simplifies both the repository and the operational workflow:
-
-* **GitHub is the Source of Truth:** Pure markdown source code, collaborative pull requests, automated validation, and `CODEOWNERS` peer review. **No binary ZIP files are stored in Git.**
-* **Skill Registry is the Runtime Catalog:** Automatically provisions skills to your Gemini Enterprise Apps, manages immutable **Skill Revisions**, tracks audit logs, and handles permissions natively in Google Cloud.
+* **GitHub (source of truth)**: Stores pure Markdown source files, enforces automated validation, and manages peer review through `CODEOWNERS`. Binary `.zip` files are not tracked in Git.
+* **Google Cloud Skill Registry (runtime catalog)**: Stores published skills (`projects/<PROJECT_ID>/locations/<LOCATION>/skills/<SKILL_NAME>`), maintains immutable **Skill Revisions**, tracks Cloud Audit Logs, and federates skills directly into Gemini Enterprise applications.
 
 ```mermaid
 flowchart LR
-    A["GitHub Monorepo<br/>(Markdown Source)"] -->|PR Merge / Tag| B["GitHub Actions CI/CD<br/>(WIF Auth)"]
+    A["GitHub Monorepo<br/>(Markdown Source)"] -->|PR Merge or Tag| B["GitHub Actions CI/CD<br/>(WIF Auth)"]
     B -->|publish_to_skill_registry.py| C["Google Cloud Skill Registry<br/>(Immutable Revisions)"]
     C -->|Native Federation| D["Gemini Enterprise App<br/>(End Users)"]
-    C -->|Native Federation| E["Antigravity CLI / IDE<br/>(Developers)"]
+    C -->|Native Federation| E["Antigravity CLI and IDE<br/>(Developers)"]
 ```
+
+Depending on your agency's security posture, deploy skills by using either **automated CI/CD publishing** or **admin-governed manual upload**.
 
 ---
 
-### Methodology A: Automated Deployment to Skill Registry (Zero-Click CI/CD)
+### Methodology A: Automated publishing to the Google Cloud Skill Registry
 
-This is the recommended, simplified production workflow. A single script or GitHub Action publishes the skill directly into the Google Cloud Skill Registry.
+For environments that support automated cloud deployments, use `scripts/publish_to_skill_registry.py` or GitHub Actions to publish skills directly to the Google Cloud Skill Registry.
 
-#### Local / Script Execution:
-```bash
-# Authenticate with Google Cloud
-gcloud auth login
+#### Publish from a local workstation
 
-# Publish skill directly to Google Cloud Skill Registry
-python3 scripts/publish_to_skill_registry.py \
-  --project <YOUR_GCP_PROJECT_ID> \
-  --location global \
-  --skill google-developer-documentation-style
-```
-The script packages the skill in memory, encodes the payload, sends it to `discoveryengine.googleapis.com/v1beta1`, and returns the newly minted immutable **Skill Revision ID**.
+To publish a skill from your local machine to the Google Cloud Skill Registry, complete the following steps:
 
-#### Automated GitHub Actions Pipeline (`.github/workflows/deploy-skill-registry.yaml`):
+1. Authenticate with Google Cloud:
+   ```bash
+   gcloud auth login
+   ```
+2. Run the publishing script:
+   ```bash
+   python3 scripts/publish_to_skill_registry.py \
+     --project <PROJECT_ID> \
+     --location global \
+     --skill google-developer-documentation-style
+   ```
+   The script validates the skill, packages the files in memory, sends the payload to the Discovery Engine API (`discoveryengine.googleapis.com/v1beta1`), and outputs the new immutable skill revision ID.
+
+#### Publish through GitHub Actions CI/CD
+
+To automate publishing whenever a maintainer pushes a version tag, configure a GitHub Actions workflow with Workload Identity Federation:
 
 ```yaml
-name: Deploy Skills to Google Cloud Skill Registry
+name: Publish to Google Cloud Skill Registry
 
 on:
   push:
@@ -154,22 +171,23 @@ jobs:
       id-token: write
 
     steps:
-      - name: Checkout Code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud (Workload Identity Federation)
+      - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: "projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
-          service_account: "gemini-skills-deployer@my-gov-project.iam.gserviceaccount.com"
+          workload_identity_provider: "projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/<POOL_ID>/providers/<PROVIDER_ID>"
+          service_account: "<DEPLOYER_SA>@<PROJECT_ID>.iam.gserviceaccount.com"
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Publish Skills to Skill Registry
+      - name: Validate and publish skills
         run: |
+          python3 scripts/validate_skills.py
           python3 scripts/publish_to_skill_registry.py \
             --project ${{ secrets.GCP_PROJECT_ID }} \
             --location global
@@ -177,47 +195,60 @@ jobs:
 
 ---
 
-### Methodology B: Admin-Governed Manual Deployment (Air-Gapped / Human Gate)
+### Methodology B: Admin-governed manual upload
 
-For environments where automated network ingress is prohibited and an administrator must perform a human-in-the-loop manual upload:
+For air-gapped environments or agencies that require a manual administrative gate before production changes, complete the following steps:
 
-1. **Build Archive Locally or via Release Tag**:
+1. Generate the `.zip` archive locally (or download it from the **GitHub Releases** page):
    ```bash
    python3 scripts/package_skills.py --skill google-developer-documentation-style
    ```
-2. **Access Gemini Enterprise Console**:
-   * Open the Gemini Enterprise web console as an administrator.
-   * Go to **Skills** > **Create Skill** (or **Add Skill**).
-   * Upload the generated `.zip` from `dist/` (or from GitHub Releases).
-3. **Staged Rollout (Canary / Pilot Group)**:
-   * Share the skill initially with a **Pilot Group** (for example, the Technical Documentation Leads).
-   * After verification in production chats, promote visibility to **Share with Organization**.
+   The script writes `dist/google-developer-documentation-style.zip`.
+2. Open the **Gemini Enterprise** web console with an administrator account.
+3. In the left navigation menu, click **Skills**.
+4. Click **Create Skill** (or **Add Skill**), select **Upload Skill**, and select the `.zip` archive.
+5. In the **Sharing and Visibility** section, select **Share with Groups** and assign the skill to a pilot group (such as the technical writing leads).
+6. Verify the skill in production chat sessions for 48 hours to confirm that no unintended semantic triggers occur.
+7. Update the sharing settings to **Share with Organization**.
 
 ---
 
-## 5. Rollback and Incident Management
+## 5. Rollback and incident management
 
-If a skill update produces unexpected responses or conflicts with agency workflows, execute the following rollback procedure:
+If a skill update causes unexpected behavior, use one of the following rollback procedures.
 
-### Fast Rollback (Under 2 Minutes)
-1. In the **Gemini Enterprise Console**, navigate to **Skills**.
-2. Locate the impacted skill.
-3. Toggle the status from **Enabled** to **Disabled** (or change visibility from *Organization* to *Private*).
-4. This immediately halts skill execution across all active enterprise chat sessions without requiring a software deployment.
+### Disable a skill immediately
 
-### Restoring a Previous Version
-1. Download the previously known stable ZIP archive from GitHub Releases (for example, `v1.0.0` instead of `v1.1.0`).
-2. In Gemini Enterprise, edit the existing skill and select **Replace / Re-upload Package**.
-3. Upload the prior stable `.zip` file.
-4. Save and re-enable visibility.
-5. In Git, revert the commit on `main` and file a tracking issue detailing the unexpected behavior.
+To stop a skill from executing across active chat sessions in under two minutes, complete the following steps:
+
+1. In the **Gemini Enterprise** console, click **Skills**.
+2. Select the affected skill.
+3. Toggle the skill status from **Enabled** to **Disabled** (or change visibility from **Share with Organization** to **Private**). The platform halts execution of the skill across all user sessions immediately.
+
+### Restore a previous skill revision
+
+To roll back to a previous version of a skill, complete the following steps:
+
+1. Check out the previous stable Git tag in your local repository (for example, `google-developer-documentation-style@v1.0.0`):
+   ```bash
+   git checkout google-developer-documentation-style@v1.0.0
+   ```
+2. Publish the prior version to the Google Cloud Skill Registry:
+   ```bash
+   python3 scripts/publish_to_skill_registry.py \
+     --project <PROJECT_ID> \
+     --location global \
+     --skill google-developer-documentation-style
+   ```
+   Alternatively, download the prior `.zip` archive from the **GitHub Releases** page and upload it through the **Replace Package** option in the web console.
+3. Revert the offending commit on the `main` branch and open a tracking issue.
 
 ---
 
-## 6. Audit Logging and Monitoring
+## 6. Audit logging and monitoring
 
-Gemini Enterprise operations generate Cloud Audit Logs accessible via Google Cloud **Logs Explorer**:
+Gemini Enterprise records administrative and usage events in Google Cloud **Logs Explorer**:
 
-* **Admin Activity**: Tracks skill creation, updates, sharing modifications, and deletions (`discoveryengine.googleapis.com`).
-* **Data Access Logs**: Records when users invoke skills in conversation (without recording private prompt contents if sensitive logging is disabled).
-* **Monitoring Metrics**: Use Google Cloud Monitoring to track skill invocation rates, response latency, and user satisfaction feedback.
+* **Admin activity logs**: Track skill creation, revision updates, sharing changes, and deletions under the `discoveryengine.googleapis.com` service name.
+* **Data access logs**: Record when users invoke skills in chat sessions.
+* **Cloud Monitoring metrics**: Track skill invocation counts, latency, and error rates across your organization.
