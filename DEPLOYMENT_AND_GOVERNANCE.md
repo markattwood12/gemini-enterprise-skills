@@ -153,7 +153,7 @@ To publish a skill from your local machine to the Google Cloud Skill Registry, c
 
 #### Publish through GitHub Actions CI/CD
 
-To automate publishing whenever a maintainer pushes a version tag, configure a GitHub Actions workflow with Workload Identity Federation:
+To automate publishing whenever a maintainer pushes a version tag, configure the repository's [`.github/workflows/publish-skill-registry.yaml`](.github/workflows/publish-skill-registry.yaml) workflow with Workload Identity Federation:
 
 ```yaml
 name: Publish to Google Cloud Skill Registry
@@ -164,7 +164,7 @@ on:
       - "*@v*"
 
 jobs:
-  deploy:
+  publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -174,23 +174,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: "projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/<POOL_ID>/providers/<PROVIDER_ID>"
-          service_account: "<DEPLOYER_SA>@<PROJECT_ID>.iam.gserviceaccount.com"
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Validate and publish skills
+      - name: Validate Skills
+        run: python3 scripts/validate_skills.py
+
+      - name: Authenticate to Google Cloud
+        if: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && vars.GCP_SERVICE_ACCOUNT != '' }}
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Publish Skills to Skill Registry
+        if: ${{ vars.GCP_PROJECT_ID != '' }}
         run: |
-          python3 scripts/validate_skills.py
           python3 scripts/publish_to_skill_registry.py \
-            --project ${{ secrets.GCP_PROJECT_ID }} \
-            --location global
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --location "${{ vars.GCP_LOCATION || 'global' }}"
 ```
 
 ---
